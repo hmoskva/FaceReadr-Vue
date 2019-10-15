@@ -1,7 +1,13 @@
 import Vue from "vue";
 import App from "./App.vue";
+import Toasted from "vue-toasted";
 
 Vue.config.productionTip = false;
+Vue.use(Toasted, {
+  duration: 2000,
+  theme: "bubble",
+  className: "p-3"
+});
 
 new Vue({
   render: h => h(App)

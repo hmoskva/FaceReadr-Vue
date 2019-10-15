@@ -12,6 +12,11 @@ import * as faceApi from "face-api.js";
 
 export default {
   methods: {
+    data() {
+      return {
+        interval: ""
+      };
+    },
     start() {
       navigator.getUserMedia(
         { video: {} },
@@ -23,27 +28,52 @@ export default {
             document.body.append(canvas);
             const displaySize = { width: video.width, height: video.height };
             faceApi.matchDimensions(canvas, displaySize);
-            setInterval(async () => {
-              const detections = await faceApi
-                .detectAllFaces(video, new faceApi.TinyFaceDetectorOptions())
+            this.interval = setInterval(async () => {
+              const detection = await faceApi
+                .detectSingleFace(
+                  video,
+                  new faceApi.TinyFaceDetectorOptions({ scoreThreshold: 0.01 })
+                )
                 .withFaceLandmarks()
                 .withFaceExpressions();
-              console.log(detections); // [{expressions: {angry, disgusted, fearful, happy, neutral, sad, surprised}}]
-              const resizedDetections = faceApi.resizeResults(
-                detections,
-                displaySize
-              );
-              canvas
-                .getContext("2d")
-                .clearRect(0, 0, canvas.width, canvas.height);
-              faceApi.draw.drawDetections(canvas, resizedDetections);
-              faceApi.draw.drawFaceLandmarks(canvas, resizedDetections);
-              faceApi.draw.drawFaceExpressions(canvas, resizedDetections);
-            }, 100);
+              // console.log(detection, "det");
+              this.showToast(detection); // [{expressions: {angry, disgusted, fearful, happy, neutral, sad, surprised}}]
+              // const resizedDetection = faceApi.resizeResults(
+              //   detection,
+              //   displaySize
+              // );
+              // canvas
+              //   .getContext("2d")
+              //   .clearRect(0, 0, canvas.width, canvas.height);
+              // faceApi.draw.drawDetections(canvas, resizedDetection);
+              // faceApi.draw.drawFaceLandmarks(canvas, resizedDetection);
+              // faceApi.draw.drawFaceExpressions(canvas, resizedDetection);
+            }, 3000);
           });
         },
         err => console.error(err)
       );
+    },
+    showToast(detection) {
+      //TODO: Get max expression score
+      if (detection.expressions) {
+        const maxScore = Math.max.apply(
+          null,
+          Object.values(detection.expressions)
+        );
+
+        const expression = Object.keys(detection.expressions).find(
+          key => detection.expressions[key] == maxScore
+        );
+        console.log(expression, "expr");
+        this.$toasted.info(`You are ${expression}`);
+        // for (let expression in detection.expressions) {
+        //   if (detection.expressions[expression]) {
+        //     console.log(`You are ${expression}`);
+        //     // this.$toasted.show(`You are ${expression}`);
+        //   }
+        // }
+      }
     }
   },
   mounted() {
@@ -55,6 +85,9 @@ export default {
     ])
       .then(this.start)
       .catch(err => console.log(err));
+  },
+  beforeDestroy() {
+    clearInterval(this.intercal);
   }
 };
 </script>
